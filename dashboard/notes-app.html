@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Girly Notes App</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+    
+    body {
+      font-family: 'Pacifico', cursive;
+      background-color: #fff0f5;
+      color: #4a4a4a;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #ff69b4;
+      margin-bottom: 20px;
+    }
+    
+    .toolbar {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f8f8f8;
+      border-radius: 5px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .toolbar button {
+      background-color: #ff69b4;
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Pacifico', cursive;
+      transition: background-color 0.3s;
+    }
+    
+    .toolbar button:hover {
+      background-color: #ff5ba7;
+    }
+    
+    .toolbar button.active {
+      background-color: #d6568f;
+    }
+    
+    .editor {
+      min-height: 300px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      line-height: 1.5;
+      overflow-y: auto;
+    }
+    
+    .editor:focus {
+      outline: none;
+      border-color: #ff69b4;
+      box-shadow: 0 0 5px rgba(255, 105, 180, 0.5);
+    }
+    
+    .todo-section {
+      margin-top: 20px;
+    }
+    
+    .todo-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    
+    .todo-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .todo-item input[type="checkbox"] {
+      margin-right: 10px;
+    }
+    
+    .todo-item.completed span {
+      text-decoration: line-through;
+      color: #999;
+    }
+    
+    .todo-input {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    
+    .todo-input input {
+      flex-grow: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px 0 0 4px;
+      font-family: 'Pacifico', cursive;
+    }
+    
+    .todo-input button {
+      background-color: #ff69b4;
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+      font-family: 'Pacifico', cursive;
+    }
+    
+    .heading {
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #ff69b4;
+      border-bottom: 2px solid #ff69b4;
+      padding-bottom: 5px;
+      margin-top: 15px;
+      display: block;
+    }
+    
+    .highlight {
+      background-color: #ffff9e;
+      padding: 0 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✨ Girly Notes App ✨</h1>
+    
+    <div class="toolbar">
+      <button id="boldBtn" title="Bold">Bold</button>
+      <button id="highlightBtn" title="Highlight">Highlight</button>
+      <button id="clearBtn" title="Clear Formatting">Clear Format</button>
+      <button id="saveBtn" title="Save Notes">Save Notes</button>
+      <button id="loadBtn" title="Load Notes">Load Notes</button>
+    </div>
+    
+    <div id="editor" class="editor" contenteditable="true"></div>
+    
+    <div class="todo-section">
+      <div class="heading">To-Do List</div>
+      <div class="todo-input">
+        <input type="text" id="todoInput" placeholder="Add a new task..." spellcheck="false">
+        <button id="addTodoBtn">Add</button>
+      </div>
+      <ul id="todoList" class="todo-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Initialize the editor
+    const editor = document.getElementById('editor');
+    const boldBtn = document.getElementById('boldBtn');
+    const highlightBtn = document.getElementById('highlightBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    const todoInput = document.getElementById('todoInput');
+    const addTodoBtn = document.getElementById('addTodoBtn');
+    const todoList = document.getElementById('todoList');
+    
+    // Disable spell checking and autocorrect
+    editor.setAttribute('spellcheck', 'false');
+    editor.setAttribute('autocorrect', 'off');
+    editor.setAttribute('autocapitalize', 'off');
+    
+    // Bold button
+    boldBtn.addEventListener('click', () => {
+      document.execCommand('bold', false, null);
+      editor.focus();
+    });
+    
+    // Highlight button
+    highlightBtn.addEventListener('click', () => {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = 'highlight';
+        range.surroundContents(span);
+        editor.focus();
+      }
+    });
+    
+    // Clear formatting button
+    clearBtn.addEventListener('click', () => {
+      document.execCommand('removeFormat', false, null);
+      editor.focus();
+    });
+    
+    // Save notes
+    saveBtn.addEventListener('click', () => {
+      const notesContent = editor.innerHTML;
+      const todoItems = [];
+      
+      document.querySelectorAll('.todo-item').forEach(item => {
+        todoItems.push({
+          text: item.querySelector('span').textContent,
+          completed: item.classList.contains('completed')
+        });
+      });
+      
+      const data = {
+        notes: notesContent,
+        todos: todoItems
+      };
+      
+      localStorage.setItem('girlyNotes', JSON.stringify(data));
+      alert('Notes saved successfully!');
+    });
+    
+    // Load notes
+    loadBtn.addEventListener('click', () => {
+      const savedData = localStorage.getItem('girlyNotes');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        editor.innerHTML = data.notes;
+        
+        // Clear current todo list
+        todoList.innerHTML = '';
+        
+        // Restore todo items
+        data.todos.forEach(todo => {
+          addTodoItem(todo.text, todo.completed);
+        });
+        
+        alert('Notes loaded successfully!');
+      } else {
+        alert('No saved notes found!');
+      }
+    });
+    
+    // Handle double Enter for headings
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+        const node = range.startContainer;
+        
+        // Check if node content ends with a newline
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent;
+          const cursorPosition = range.startOffset;
+          
+          if (cursorPosition > 0 && text.charAt(cursorPosition - 1) === '\n') {
+            // Double Enter detected - create heading
+            e.preventDefault();
+            
+            // Split the text at cursor position
+            const beforeText = text.substring(0, cursorPosition);
+            const afterText = text.substring(cursorPosition);
+            
+            // Replace current text with text before cursor
+            node.textContent = beforeText;
+            
+            // Create heading element
+            const headingElement = document.createElement('div');
+            headingElement.className = 'heading';
+            headingElement.contentEditable = true;
+            headingElement.textContent = '';
+            
+            // Create element for text after cursor
+            const afterElement = document.createTextNode(afterText);
+            
+            // Insert elements
+            const parentNode = node.parentNode;
+            if (afterText) {
+              parentNode.insertBefore(afterElement, node.nextSibling);
+            }
+            parentNode.insertBefore(headingElement, afterText ? afterElement : node.nextSibling);
+            
+            // Set cursor to heading
+            const newRange = document.createRange();
+            newRange.setStart(headingElement, 0);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          }
+        }
+      }
+    });
+    
+    // Add todo item
+    function addTodoItem(text, completed = false) {
+      const li = document.createElement('li');
+      li.className = completed ? 'todo-item completed' : 'todo-item';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = completed;
+      checkbox.addEventListener('change', () => {
+        li.classList.toggle('completed', checkbox.checked);
+      });
+      
+      const span = document.createElement('span');
+      span.textContent = text;
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '×';
+      deleteBtn.style.marginLeft = 'auto';
+      deleteBtn.style.background = 'none';
+      deleteBtn.style.border = 'none';
+      deleteBtn.style.color = '#ff69b4';
+      deleteBtn.style.fontSize = '1.2em';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.addEventListener('click', () => {
+        li.remove();
+      });
+      
+      li.appendChild(checkbox);
+      li.appendChild(span);
+      li.appendChild(deleteBtn);
+      todoList.appendChild(li);
+    }
+    
+    // Add todo on button click
+    addTodoBtn.addEventListener('click', () => {
+      const text = todoInput.value.trim();
+      if (text) {
+        addTodoItem(text);
+        todoInput.value = '';
+      }
+    });
+    
+    // Add todo on Enter key
+    todoInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const text = todoInput.value.trim();
+        if (text) {
+          addTodoItem(text);
+          todoInput.value = '';
+        }
+      }
+    });
+    
+    // Display welcome message
+    editor.innerHTML = `Welcome to your notes app!<br><br>`;
+    // Add a first heading example
+    const headingElement = document.createElement('div');
+    headingElement.className = 'heading';
+    headingElement.textContent = 'My First Note';
+    editor.appendChild(headingElement);
+    editor.innerHTML += '<br>Start typing here...<br><br>';
+    
+    // Focus editor on load
+    window.onload = () => {
+      editor.focus();
+    };
+  </script>
+</body>
+</html>
